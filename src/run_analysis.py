@@ -274,12 +274,16 @@ def main() -> None:
         text_all, rpt,
         keywords=cfg.get("kansei", {}).get("undervibrancy_keywords"),
     )
-    zero_shot_stats = run_zero_shot_diagnostics(
-        data["text_all"],
-        reporter=rpt,
-        max_samples=cfg.get("kansei", {}).get("zero_shot_max_samples", 3000),
-        text_max_chars=cfg.get("kansei", {}).get("zero_shot_text_max_chars", 512),
-    )
+    zero_shot_stats: dict[str, float] = {}
+    if cfg.get("kansei", {}).get("zero_shot_enabled", False):
+        zero_shot_stats = run_zero_shot_diagnostics(
+            data["text_all"],
+            reporter=rpt,
+            max_samples=cfg.get("kansei", {}).get("zero_shot_max_samples", 3000),
+            text_max_chars=cfg.get("kansei", {}).get("zero_shot_text_max_chars", 512),
+        )
+    else:
+        rpt.log("Zero-shot diagnostics disabled by config (kansei.zero_shot_enabled=false).")
     
     # Optional: Log the top driver to the final executive metrics buffer
     if zero_shot_stats:

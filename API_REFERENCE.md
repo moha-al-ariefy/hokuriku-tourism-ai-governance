@@ -27,6 +27,11 @@ Applies `sanitize_text` to the specified DataFrame columns and returns a copied 
 
 Runs zero-shot classification on detractor free text and returns percentage distribution by category.
 
+Execution is gated by config in `config/settings.yaml`:
+- `kansei.zero_shot_enabled` (default `false`)
+- `kansei.zero_shot_max_samples`
+- `kansei.zero_shot_text_max_chars`
+
 Current labels:
 - `weather conditions`
 - `poor transportation`
