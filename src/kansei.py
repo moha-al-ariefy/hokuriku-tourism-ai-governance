@@ -11,6 +11,7 @@ Implements:
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import numpy as np
@@ -18,6 +19,8 @@ import pandas as pd
 from scipy import stats
 
 from .report import Reporter
+
+logger = logging.getLogger(__name__)
 
 # ── Discomfort Index ─────────────────────────────────────────────────────────
 
@@ -426,7 +429,7 @@ def run_zero_shot_diagnostics(
     Returns:
         Dictionary mapping candidate labels to their percentage occurrence.
     """
-    rpt = reporter.log if reporter else print
+    rpt = reporter.log if reporter else logger.info
     
     # Check if satisfaction column exists to filter detractors
     if "satisfaction" not in survey_df.columns:

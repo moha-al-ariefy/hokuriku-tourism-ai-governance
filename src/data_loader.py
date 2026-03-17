@@ -8,6 +8,7 @@ pipeline convention (``count``, ``temp``, ``precip``, ``wind``, etc.).
 from __future__ import annotations
 
 import glob
+import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,16 @@ from statsmodels.tsa.stattools import adfuller
 
 from .report import Reporter
 from .privacy_nlp import apply_privacy_layer
+
+logger = logging.getLogger(__name__)
+
+
+def _log_sink(reporter: Reporter | None):
+    """Return a consistent logging sink.
+
+    Uses Reporter when available, otherwise module logging.
+    """
+    return reporter.log if reporter else logger.info
 
 # ── Camera (AI people-flow) ──────────────────────────────────────────────────
 
@@ -67,7 +78,7 @@ def load_camera_daily(
         DataFrame with columns ``[date, count]`` sorted by date.
         Zero-count days (sensor outage) are **removed**.
     """
-    rpt = reporter.log if reporter else print
+    rpt = _log_sink(reporter)
 
     rows = _parse_camera_rows(glob_pattern)
 
@@ -112,7 +123,7 @@ def load_weather_daily(
         DataFrame ``[date, precip, temp, sun, wind]`` (and optionally
         ``snow_depth``, ``humidity`` when available).
     """
-    rpt = reporter.log if reporter else print
+    rpt = _log_sink(reporter)
 
     path = Path(primary_path)
     if not path.exists() and legacy_path:
@@ -174,7 +185,7 @@ def load_google_intent(
         - ``google_df``: DataFrame with ``date`` + all intent columns.
         - ``route_col_name``: Name of the best route-search column found.
     """
-    rpt = reporter.log if reporter else print
+    rpt = _log_sink(reporter)
     trend_root = Path(trend_root)
 
     frames: list[pd.DataFrame] = []
@@ -225,7 +236,7 @@ def load_survey_prefectures(
     Returns:
         DataFrame ``[prefecture, date]``.
     """
-    rpt = reporter.log if reporter else print
+    rpt = _log_sink(reporter)
     frames: list[pd.DataFrame] = []
 
     for path in sorted(glob.glob(glob_pattern)):
@@ -262,7 +273,7 @@ def load_survey_satisfaction(
         DataFrame ``[prefecture, date, satisfaction, satisfaction_service,
         nps_raw]``.
     """
-    rpt = reporter.log if reporter else print
+    rpt = _log_sink(reporter)
     frames: list[pd.DataFrame] = []
 
     for path in sorted(glob.glob(glob_pattern)):
@@ -324,7 +335,7 @@ def load_survey_text(
         DataFrame ``[prefecture, date, satisfaction, reason, inconvenience,
         freetext]``.
     """
-    rpt = reporter.log if reporter else print
+    rpt = _log_sink(reporter)
     frames: list[pd.DataFrame] = []
 
     for path in sorted(glob.glob(glob_pattern)):
@@ -378,7 +389,7 @@ def load_raw_fukui_survey(
     Returns:
         DataFrame with original columns plus ``spending_midpoint`` and ``date``.
     """
-    rpt = reporter.log if reporter else print
+    rpt = _log_sink(reporter)
     path = Path(path)
     if not path.exists():
         rpt(f"WARNING: Raw survey not found at {path}")
@@ -412,7 +423,7 @@ def merge_daily(
     Returns:
         Merged DataFrame with outlier flags and ADF results logged.
     """
-    rpt = reporter.log if reporter else print
+    rpt = _log_sink(reporter)
 
     daily = camera.merge(weather, on="date", how="left")
     daily = daily.merge(google, on="date", how="left")
@@ -448,7 +459,7 @@ def run_adf_tests(
         route_col: Name of the Google intent column.
         reporter: Optional ``Reporter``.
     """
-    rpt = reporter.log if reporter else print
+    rpt = _log_sink(reporter)
     rpt("\nAugmented Dickey-Fuller tests:")
 
     for name, series in [("count", daily["count"]),
