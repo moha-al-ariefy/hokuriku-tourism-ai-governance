@@ -274,8 +274,12 @@ def main() -> None:
         text_all, rpt,
         keywords=cfg.get("kansei", {}).get("undervibrancy_keywords"),
     )
-    # We pass data["text_all"] because it contains both 'satisfaction' and the text columns
-    zero_shot_stats = run_zero_shot_diagnostics(data["text_all"], reporter=rpt)
+    zero_shot_stats = run_zero_shot_diagnostics(
+        data["text_all"],
+        reporter=rpt,
+        max_samples=cfg.get("kansei", {}).get("zero_shot_max_samples", 3000),
+        text_max_chars=cfg.get("kansei", {}).get("zero_shot_text_max_chars", 512),
+    )
     
     # Optional: Log the top driver to the final executive metrics buffer
     if zero_shot_stats:
@@ -284,13 +288,14 @@ def main() -> None:
         rpt.metrics(f"PRIMARY OPPORTUNITY GAP DRIVER: {top_driver.upper()}")
         rpt.metrics("=" * 40)
     
-    fig_num += 1
-    viz.plot_opportunity_gap_drivers(
-        data["text_all"],
-        os.path.join(fig_dir, f"fig{fig_num:02d}_opportunity_gap_drivers.png"),
-        rpt, 
-        dpi=dpi
-    )
+    if zero_shot_stats:
+        fig_num += 1
+        viz.plot_opportunity_gap_drivers(
+            zero_shot_stats,
+            os.path.join(fig_dir, f"fig{fig_num:02d}_opportunity_gap_drivers.png"),
+            rpt,
+            dpi=dpi,
+        )
     undervibrancy_hits = text_result.get("undervibrancy_hits", 0)
     pct = text_result.get("pct", 0)
     ratio_vs_high = text_result.get("ratio_vs_high", 0.0)

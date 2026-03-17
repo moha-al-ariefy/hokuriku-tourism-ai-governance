@@ -409,6 +409,8 @@ def run_zero_shot_diagnostics(
     survey_df: pd.DataFrame,
     *,
     reporter: Reporter | None = None,
+    max_samples: int | None = 3000,
+    text_max_chars: int = 512,
 ) -> dict[str, float]:
     """Diagnose root causes of 'Opportunity Gap' via Zero-Shot Classification.
 
@@ -418,6 +420,8 @@ def run_zero_shot_diagnostics(
     Args:
         survey_df: DataFrame containing satisfaction scores and text columns.
         reporter: Optional ``Reporter`` for logging.
+        max_samples: Optional cap for number of detractor texts to classify.
+        text_max_chars: Maximum characters per text to classify.
 
     Returns:
         Dictionary mapping candidate labels to their percentage occurrence.
@@ -452,6 +456,16 @@ def run_zero_shot_diagnostics(
         rpt("No valid text found in detractor responses.")
         return {}
 
+    if max_samples is not None and len(texts) > max_samples:
+        rpt(
+            f"Capping zero-shot inputs: using {max_samples} of {len(texts)} "
+            "detractor texts for stable runtime."
+        )
+        texts = texts[:max_samples]
+
+    # Bound sequence length to keep memory and latency predictable.
+    texts = [str(t)[:text_max_chars] for t in texts]
+
     try:
         from transformers import pipeline
     except ImportError:
@@ -481,7 +495,13 @@ def run_zero_shot_diagnostics(
     ]
 
     # Run classification (using batch_size to respect local memory limits)
-    results = classifier(texts, candidate_labels, batch_size=8)
+    results = classifier(
+        texts,
+        candidate_labels,
+        batch_size=8,
+        truncation=True,
+        multi_label=False,
+    )
     
     # Handle edge case where pipeline returns a dict instead of a list for a single item
     if isinstance(results, dict):

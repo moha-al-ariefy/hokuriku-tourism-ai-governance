@@ -1352,88 +1352,81 @@ def plot_dhde_architecture(
 # ── Fig 17: Opportunity Gap Drivers ──────────────────────────────────────────
 
 def plot_opportunity_gap_drivers(
-    survey_df: pd.DataFrame,
+    driver_percentages: dict[str, float],
     out_path: str,
     reporter: Reporter,
     dpi: int = 300
 ) -> plt.Figure | None:
-    """Stacked bar chart of Zero-Shot complaint diagnostics by tourism nodes.
-
-    This visually validates the 'Opportunity Gap' thesis by separating
-    weather-related friction from infrastructure friction.
-    """
-    if "satisfaction" not in survey_df.columns:
-        reporter.log("Missing 'satisfaction' column for Opportunity Gap visualization.")
+    """Horizontal bar chart of zero-shot complaint driver percentages."""
+    if not driver_percentages:
+        reporter.log("No zero-shot driver percentages found; skipping chart.")
         return None
 
-    # 1. Extracted node distribution mapping directly to the ¥11.96B thesis
-    nodes = ["Tojinbo", "Fukui Station", "Katsuyama", "Rainbow Line"]
-    
-    # Representative distribution from NLP findings:
-    # Weather dominates Tojinbo/Rainbow Line. Infrastructure dominates Fukui/Katsuyama.
-    data = {
-        "Node": nodes,
-        "Weather Conditions": [65, 10, 20, 70],
-        "Poor Transportation": [15, 50, 60, 15],
-        "Lack of Information": [10, 25, 15, 10],
-        "Language Barrier": [5, 10, 5, 5],
-        "Pricing": [5, 5, 0, 0]
-    }
-    
-    df_plot = pd.DataFrame(data).set_index("Node")
+    df_plot = (
+        pd.Series(driver_percentages, name="percentage")
+        .sort_values(ascending=True)
+        .rename_axis("driver")
+        .reset_index()
+    )
 
-    # 2. Styling (Academic / Publishable)
-    plt.style.use('seaborn-v0_8-whitegrid')
-    
-    # Custom color palette: Blues/Greys for environment, Reds/Oranges for infrastructure
-    colors = ['#8da0cb', '#fc8d62', '#e78ac3', '#a6d854', '#ffd92f']
+    # Consistent visual language with the rest of the report figures.
+    plt.style.use("seaborn-v0_8-whitegrid")
 
-    # 3. Create the Stacked Bar Chart
     fig, ax = plt.subplots(figsize=(10, 6))
-    df_plot.plot(kind='bar', stacked=True, color=colors, ax=ax, edgecolor='black', linewidth=0.5)
+    bars = ax.barh(
+        df_plot["driver"],
+        df_plot["percentage"],
+        color="#2E6F95",
+        edgecolor="black",
+        linewidth=0.5,
+    )
 
-    # 4. Formatting
-    ax.set_title("Opportunity Gap Drivers by Hokuriku Tourism Node (Zero-Shot NLP)", 
-                 fontsize=14, weight='bold', pad=15)
-    ax.set_ylabel("Percentage of Detractor Complaints (%)", fontsize=12, weight='bold')
-    ax.set_xlabel("Tourism Node", fontsize=12, weight='bold')
-    
-    plt.xticks(rotation=0)
-    ax.legend(title="Root Cause (mDeBERTa-v3)", bbox_to_anchor=(1.05, 1), loc='upper left')
-    ax.set_ylim(0, 100)
-    ax.grid(axis='y', linestyle='--', alpha=0.7)
-    
+    for bar, pct in zip(bars, df_plot["percentage"]):
+        ax.text(
+            bar.get_width() + 0.8,
+            bar.get_y() + bar.get_height() / 2,
+            f"{pct:.1f}%",
+            va="center",
+            fontsize=10,
+        )
+
+    ax.set_title(
+        "Opportunity Gap Complaint Drivers (Zero-Shot NLP)",
+        fontsize=14,
+        weight="bold",
+        pad=15,
+    )
+    ax.set_ylabel("Root Cause", fontsize=12, weight="bold")
+    ax.set_xlabel("Percentage of Detractor Complaints (%)", fontsize=12, weight="bold")
+    ax.set_xlim(0, 100)
+    ax.grid(axis="x", linestyle="--", alpha=0.7)
+
     fig.tight_layout()
     reporter.save_fig(fig, out_path, dpi=dpi, ja_copy=False)
 
     # ── Japanese variant ──────────────────────────────────────────────────
     def _ja(fig_ja: plt.Figure) -> None:
         ax_ja = fig_ja.axes[0]
-        node_map = {
-            "Tojinbo": "東尋坊",
-            "Fukui Station": "福井駅",
-            "Katsuyama": "勝山",
-            "Rainbow Line": "レインボーライン"
-        }
         cause_map = {
-            "Weather Conditions": "天候条件",
-            "Poor Transportation": "交通インフラ不足",
-            "Lack of Information": "情報不足",
-            "Language Barrier": "言語の壁",
-            "Pricing": "価格設定"
+            "weather conditions": "天候条件",
+            "poor transportation": "交通インフラ不足",
+            "lack of information": "情報不足",
+            "language barrier": "言語の壁",
+            "pricing": "価格設定",
         }
-        
-        ax_ja.set_title("北陸観光拠点別のオポチュニティギャップ要因（Zero-Shot NLP）", 
-                        fontsize=14, weight='bold', pad=15)
-        ax_ja.set_ylabel("低評価来訪者の苦情割合 (%)", fontsize=12, weight='bold')
-        ax_ja.set_xlabel("観光拠点", fontsize=12, weight='bold')
-        ax_ja.set_xticklabels([node_map.get(x.get_text(), x.get_text()) for x in ax_ja.get_xticklabels()])
-        
-        leg = ax_ja.get_legend()
-        if leg:
-            leg.set_title("根本原因 (mDeBERTa-v3)")
-            for t in leg.get_texts():
-                t.set_text(cause_map.get(t.get_text(), t.get_text()))
+
+        ax_ja.set_title(
+            "オポチュニティギャップ苦情要因（Zero-Shot NLP）",
+            fontsize=14,
+            weight="bold",
+            pad=15,
+        )
+        ax_ja.set_ylabel("根本原因", fontsize=12, weight="bold")
+        ax_ja.set_xlabel("低評価来訪者の苦情割合 (%)", fontsize=12, weight="bold")
+        y_ticks = ax_ja.get_yticks()
+        y_labels = [cause_map.get(t.get_text(), t.get_text()) for t in ax_ja.get_yticklabels()]
+        ax_ja.set_yticks(y_ticks)
+        ax_ja.set_yticklabels(y_labels)
 
     _save_with_ja(fig, out_path, reporter, _ja, dpi=dpi)
     return fig
