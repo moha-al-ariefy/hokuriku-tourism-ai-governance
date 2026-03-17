@@ -36,6 +36,7 @@ from src.kansei import (
     eiheiji_atmospheric_resilience,
     overtourism_threshold,
     text_mine_undervibrancy,
+    run_zero_shot_diagnostics,  
 )
 from src.latex_export import export_all_tables
 from src.models import fit_ols, fit_random_forest, robustness_suite, statistical_rigor
@@ -272,6 +273,23 @@ def main() -> None:
     text_result = text_mine_undervibrancy(
         text_all, rpt,
         keywords=cfg.get("kansei", {}).get("undervibrancy_keywords"),
+    )
+    # We pass data["text_all"] because it contains both 'satisfaction' and the text columns
+    zero_shot_stats = run_zero_shot_diagnostics(data["text_all"], reporter=rpt)
+    
+    # Optional: Log the top driver to the final executive metrics buffer
+    if zero_shot_stats:
+        top_driver = list(zero_shot_stats.keys())[0]
+        rpt.metrics("=" * 40)
+        rpt.metrics(f"PRIMARY OPPORTUNITY GAP DRIVER: {top_driver.upper()}")
+        rpt.metrics("=" * 40)
+    
+    fig_num += 1
+    viz.plot_opportunity_gap_drivers(
+        data["text_all"],
+        os.path.join(fig_dir, f"fig{fig_num:02d}_opportunity_gap_drivers.png"),
+        rpt, 
+        dpi=dpi
     )
     undervibrancy_hits = text_result.get("undervibrancy_hits", 0)
     pct = text_result.get("pct", 0)
