@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import List
 
 import pandas as pd
 
@@ -50,7 +49,8 @@ def sanitize_text(text: str) -> str:
     email_pattern = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
     clean_text = re.sub(email_pattern, "[REDACTED_EMAIL]", clean_text)
 
-    phone_pattern = r"\b0\d{1,4}[-(]?\d{1,4}[-(]?\d{3,4}\b"
+    # Handles common variants: 090-1234-5678, 03(1234)5678, 090 1234 5678.
+    phone_pattern = r"\b0\d{1,4}(?:[-()\s]?\d{1,4}){1,2}\b"
     clean_text = re.sub(phone_pattern, "[REDACTED_PHONE]", clean_text)
 
     nlp = get_nlp_model()
@@ -67,7 +67,7 @@ def sanitize_text(text: str) -> str:
     return clean_text
 
 
-def apply_privacy_layer(df: pd.DataFrame, text_columns: List[str]) -> pd.DataFrame:
+def apply_privacy_layer(df: pd.DataFrame, text_columns: list[str]) -> pd.DataFrame:
     """Apply PII sanitization across selected DataFrame text columns."""
     df_clean = df.copy()
     for col in text_columns:

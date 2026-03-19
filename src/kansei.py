@@ -429,17 +429,18 @@ def run_zero_shot_diagnostics(
     Returns:
         Dictionary mapping candidate labels to their percentage occurrence.
     """
-    rpt = reporter.log if reporter else logger.info
+    info = reporter.log if reporter else logger.info
+    warn = reporter.log if reporter else logger.warning
     
     # Check if satisfaction column exists to filter detractors
     if "satisfaction" not in survey_df.columns:
-        rpt("WARNING: 'satisfaction' column missing. Skipping zero-shot diagnostics.")
+        warn("'satisfaction' column missing. Skipping zero-shot diagnostics.")
         return {}
 
     # 1. Filter for Detractors (Assuming 5-point scale, detractors are 1 or 2)
     detractors = survey_df[survey_df["satisfaction"] <= 2].copy()
     if detractors.empty:
-        rpt("No low-satisfaction responses found. Skipping Kansei analysis.")
+        info("No low-satisfaction responses found. Skipping Kansei analysis.")
         return {}
 
     # 2. Safely Aggregate Free-Text Features
@@ -456,11 +457,11 @@ def run_zero_shot_diagnostics(
     texts = detractors[detractors["combined_text"].str.len() > 3]["combined_text"].tolist()
 
     if not texts:
-        rpt("No valid text found in detractor responses.")
+        info("No valid text found in detractor responses.")
         return {}
 
     if max_samples is not None and len(texts) > max_samples:
-        rpt(
+        info(
             f"Capping zero-shot inputs: using {max_samples} of {len(texts)} "
             "detractor texts for stable runtime."
         )
@@ -472,11 +473,11 @@ def run_zero_shot_diagnostics(
     try:
         from transformers import pipeline
     except ImportError:
-        rpt("WARNING: transformers library not found. Skipping zero-shot diagnostics.")
+        warn("transformers library not found. Skipping zero-shot diagnostics.")
         return {}
 
-    rpt(f"Running Phase 2 Kansei Extraction on {len(texts)} detractor complaints...")
-    rpt("Booting MoritzLaurer/mDeBERTa-v3-base-mnli-xnli (Zero-Shot Mode)...")
+    info(f"Running Phase 2 Kansei Extraction on {len(texts)} detractor complaints...")
+    info("Booting MoritzLaurer/mDeBERTa-v3-base-mnli-xnli (Zero-Shot Mode)...")
 
     # 3. Load the zero-shot pipeline
     try:
@@ -485,7 +486,7 @@ def run_zero_shot_diagnostics(
             model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli"
         )
     except Exception as e:
-        rpt(f"WARNING: Model loading failed: {e}")
+        warn(f"Model loading failed: {e}")
         return {}
 
     # 4. The Candidate Labels (Directly mapping to the ¥11.96B thesis)
@@ -522,9 +523,9 @@ def run_zero_shot_diagnostics(
     # Sort descending for a cleaner log output
     sorted_pct = dict(sorted(percentages.items(), key=lambda item: item[1], reverse=True))
 
-    rpt("\nOpportunity Gap Drivers (mDeBERTa-v3 Distribution):")
+    info("\nOpportunity Gap Drivers (mDeBERTa-v3 Distribution):")
     for label, pct in sorted_pct.items():
-        rpt(f"  - {label.title()}: {pct:.1f}%")
+        info(f"  - {label.title()}: {pct:.1f}%")
 
     return sorted_pct
 

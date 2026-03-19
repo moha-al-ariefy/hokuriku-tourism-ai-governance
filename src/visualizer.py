@@ -1369,40 +1369,38 @@ def plot_opportunity_gap_drivers(
         .reset_index()
     )
 
-    # Consistent visual language with the rest of the report figures.
-    plt.style.use("seaborn-v0_8-whitegrid")
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    bars = ax.barh(
-        df_plot["driver"],
-        df_plot["percentage"],
-        color="#2E6F95",
-        edgecolor="black",
-        linewidth=0.5,
-    )
-
-    for bar, pct in zip(bars, df_plot["percentage"]):
-        ax.text(
-            bar.get_width() + 0.8,
-            bar.get_y() + bar.get_height() / 2,
-            f"{pct:.1f}%",
-            va="center",
-            fontsize=10,
+    # Use local style context to avoid affecting unrelated figures globally.
+    with plt.style.context("seaborn-v0_8-whitegrid"):
+        fig, ax = plt.subplots(figsize=(10, 6))
+        bars = ax.barh(
+            df_plot["driver"],
+            df_plot["percentage"],
+            color="#2E6F95",
+            edgecolor="black",
+            linewidth=0.5,
         )
 
-    ax.set_title(
-        "Opportunity Gap Complaint Drivers (Zero-Shot NLP)",
-        fontsize=14,
-        weight="bold",
-        pad=15,
-    )
-    ax.set_ylabel("Root Cause", fontsize=12, weight="bold")
-    ax.set_xlabel("Percentage of Detractor Complaints (%)", fontsize=12, weight="bold")
-    ax.set_xlim(0, 100)
-    ax.grid(axis="x", linestyle="--", alpha=0.7)
+        for bar, pct in zip(bars, df_plot["percentage"]):
+            ax.text(
+                bar.get_width() + 0.8,
+                bar.get_y() + bar.get_height() / 2,
+                f"{pct:.1f}%",
+                va="center",
+                fontsize=10,
+            )
 
-    fig.tight_layout()
-    reporter.save_fig(fig, out_path, dpi=dpi, ja_copy=False)
+        ax.set_title(
+            "Opportunity Gap Complaint Drivers (Zero-Shot NLP)",
+            fontsize=14,
+            weight="bold",
+            pad=15,
+        )
+        ax.set_ylabel("Root Cause", fontsize=12, weight="bold")
+        ax.set_xlabel("Percentage of Detractor Complaints (%)", fontsize=12, weight="bold")
+        ax.set_xlim(0, 100)
+        ax.grid(axis="x", linestyle="--", alpha=0.7)
+
+        fig.tight_layout()
 
     # ── Japanese variant ──────────────────────────────────────────────────
     def _ja(fig_ja: plt.Figure) -> None:

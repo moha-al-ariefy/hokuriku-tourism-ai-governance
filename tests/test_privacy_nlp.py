@@ -33,3 +33,14 @@ def test_apply_privacy_layer_applies_only_target_columns(monkeypatch):
     assert out.loc[0, "reason"] == "Email is [REDACTED_EMAIL]"
     assert out.loc[0, "freetext"] == "Call me at [REDACTED_PHONE]"
     assert out.loc[0, "note"] == "keep this raw"
+
+
+def test_sanitize_text_redacts_phone_parentheses_and_spaces(monkeypatch):
+    monkeypatch.setattr("src.privacy_nlp.get_nlp_model", lambda: None)
+
+    text = "Numbers: 03(1234)5678 and 090 1234 5678"
+    cleaned = sanitize_text(text)
+
+    assert "03(1234)5678" not in cleaned
+    assert "090 1234 5678" not in cleaned
+    assert cleaned.count("[REDACTED_PHONE]") == 2

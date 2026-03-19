@@ -542,7 +542,7 @@ def load_all_data(
     sat_all = apply_privacy_layer(sat_all, sat_cols_to_sanitize)
     
     if reporter:
-        reporter.log("Privacy sanitization complete. Downstream data is secure.")
+        reporter.log("Privacy sanitization applied (best-effort redaction) before downstream analysis.")
     # ══════════════════════════════════════════════════════════════════════
 
     # Raw Fukui survey

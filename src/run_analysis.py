@@ -36,7 +36,7 @@ from src.kansei import (
     eiheiji_atmospheric_resilience,
     overtourism_threshold,
     text_mine_undervibrancy,
-    run_zero_shot_diagnostics,  
+    run_zero_shot_diagnostics,
 )
 from src.latex_export import export_all_tables
 from src.models import fit_ols, fit_random_forest, robustness_suite, statistical_rigor
