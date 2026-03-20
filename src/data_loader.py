@@ -532,15 +532,15 @@ def load_all_data(
     if reporter:
         reporter.log("Initializing Phase 1 Privacy Layer...")
         reporter.log("Scrubbing PII (Names, Emails, Phones) from free-text fields.")
-        
+
     # APPLY TO text_all (mapped columns)
     text_cols_to_sanitize = ["reason", "inconvenience", "freetext"]
     text_all = apply_privacy_layer(text_all, text_cols_to_sanitize)
-    
+
     # APPLY TO sat_all (raw Japanese columns)
     sat_cols_to_sanitize = ["満足度理由", "不便に感じたこと・困ったこと", "自由意見"]
     sat_all = apply_privacy_layer(sat_all, sat_cols_to_sanitize)
-    
+
     if reporter:
         reporter.log("Privacy sanitization applied (best-effort redaction) before downstream analysis.")
     # ══════════════════════════════════════════════════════════════════════
